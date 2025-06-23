@@ -132,7 +132,7 @@ class MoMaskText2MotionNode:
         self.load_models()
         
     def load_models(self):
-        dim_pose = 253
+        dim_pose = 263
         dataset_name = "t2m"
         checkpoints_dir = "checkpoints"
         name = "t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns"
