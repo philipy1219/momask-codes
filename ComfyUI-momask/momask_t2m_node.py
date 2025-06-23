@@ -2,7 +2,6 @@ import os
 from os.path import join as pjoin
 from argparse import Namespace
 import re
-from utils.word_vectorizer import POS_enumerator
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -20,6 +19,24 @@ from model_loader import (
 )
 from .utils import recover_from_ric
 from visualization.joints2bvh import Joint2BVHConvertor
+
+POS_enumerator = {
+    'VERB': 0,
+    'NOUN': 1,
+    'DET': 2,
+    'ADP': 3,
+    'NUM': 4,
+    'AUX': 5,
+    'PRON': 6,
+    'ADJ': 7,
+    'ADV': 8,
+    'Loc_VIP': 9,
+    'Body_VIP': 10,
+    'Obj_VIP': 11,
+    'Act_VIP': 12,
+    'Desc_VIP': 13,
+    'OTHER': 14,
+}
 
 def is_float(numStr):
     flag = False
