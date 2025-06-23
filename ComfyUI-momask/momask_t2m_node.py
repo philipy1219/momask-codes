@@ -4,16 +4,19 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from torch.distributions.categorical import Categorical
+import sys
+sys.path.append(
+    os.path.dirname(os.path.abspath(__file__))
+)
 
-from .model_loader import (
+from model_loader import (
     load_vq_model,
     load_transformer_model,
     load_residual_model,
     load_length_estimator
 )
-from ..utils.motion_process import recover_from_ric
-from ..utils.paramUtil import t2m_kinematic_chain
-from ..visualization.joints2bvh import Joint2BVHConvertor
+from utils.motion_process import recover_from_ric
+from visualization.joints2bvh import Joint2BVHConvertor
 
 class MoMaskText2MotionNode:
     def __init__(self):
