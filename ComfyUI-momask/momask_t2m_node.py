@@ -15,7 +15,7 @@ from model_loader import (
     load_residual_model,
     load_length_estimator
 )
-from utils.motion_process import recover_from_ric
+from utils import recover_from_ric
 from visualization.joints2bvh import Joint2BVHConvertor
 
 class MoMaskText2MotionNode:
