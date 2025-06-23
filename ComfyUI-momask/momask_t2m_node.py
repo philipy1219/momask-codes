@@ -251,13 +251,13 @@ class MoMaskText2MotionNode:
             pred_motions = pred_motions.detach().cpu().numpy()
             
             # 反归一化
-            mean = np.load(pjoin(base_path, self.vq_opt["checkpoints_dir"], 
-                               self.vq_opt["dataset_name"], 
-                               self.vq_opt["name"], 
+            mean = np.load(pjoin(base_path, self.vq_opt.checkpoints_dir, 
+                               self.vq_opt.dataset_name, 
+                               self.vq_opt.name, 
                                "meta/mean.npy"))
-            std = np.load(pjoin(base_path, self.vq_opt["checkpoints_dir"], 
-                              self.vq_opt["dataset_name"], 
-                              self.vq_opt["name"], 
+            std = np.load(pjoin(base_path, self.vq_opt.checkpoints_dir, 
+                              self.vq_opt.dataset_name, 
+                              self.vq_opt.name, 
                               "meta/std.npy"))
             data = pred_motions * std + mean
 
