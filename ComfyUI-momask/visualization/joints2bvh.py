@@ -25,7 +25,7 @@ def get_grot(glb, parent, offset):
 
 class Joint2BVHConvertor:
     def __init__(self):
-        self.template = BVH.load(os.path.dirname(os.path.abspath(__file__))+'./visualization/data/template.bvh', need_quater=True)
+        self.template = BVH.load(os.path.dirname(os.path.abspath(__file__))+'/data/template.bvh', need_quater=True)
         self.re_order = [0, 1, 4, 7, 10, 2, 5, 8, 11, 3, 6, 9, 12, 15, 13, 16, 18, 20, 14, 17, 19, 21]
 
         self.re_order_inv = [0, 1, 5, 9, 2, 6, 10, 3, 7, 11, 4, 8, 12, 14, 18, 13, 15, 19, 16, 20, 17, 21]
