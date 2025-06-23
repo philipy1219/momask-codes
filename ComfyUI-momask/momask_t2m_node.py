@@ -138,35 +138,35 @@ class MoMaskText2MotionNode:
         name = "t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns"
         root_dir = pjoin(base_path, checkpoints_dir, dataset_name, name)
         model_opt_path = pjoin(base_path, root_dir, 'opt.txt')
-        model_opt = get_opt(model_opt_path, device=self.device)
+        self.model_opt = get_opt(model_opt_path, device=self.device)
         
-        vq_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, model_opt.vq_name, 'opt.txt')
-        vq_opt = get_opt(vq_opt_path, device=self.device)
-        vq_opt.dim_pose = dim_pose
-        vq_opt.checkpoints_dir = pjoin(base_path, vq_opt.checkpoints_dir)
+        vq_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, self.model_opt.vq_name, 'opt.txt')
+        self.vq_opt = get_opt(vq_opt_path, device=self.device)
+        self.vq_opt.dim_pose = dim_pose
+        self.vq_opt.checkpoints_dir = pjoin(base_path, self.vq_opt.checkpoints_dir)
 
-        model_opt.num_tokens = vq_opt.nb_code
-        model_opt.num_quantizers = vq_opt.num_quantizers
-        model_opt.code_dim = vq_opt.code_dim
-        model_opt.checkpoints_dir = pjoin(base_path, model_opt.checkpoints_dir)
+        self.model_opt.num_tokens = self.vq_opt.nb_code
+        self.model_opt.num_quantizers = self.vq_opt.num_quantizers
+        self.model_opt.code_dim = self.vq_opt.code_dim
+        self.model_opt.checkpoints_dir = pjoin(base_path, self.model_opt.checkpoints_dir)
 
         res_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", 'opt.txt')
-        res_opt = get_opt(res_opt_path, device=self.device)
-        res_opt.checkpoints_dir = pjoin(base_path, res_opt.checkpoints_dir)
+        self.res_opt = get_opt(res_opt_path, device=self.device)
+        self.res_opt.checkpoints_dir = pjoin(base_path, self.res_opt.checkpoints_dir)
 
-        assert res_opt.vq_name == model_opt.vq_name
+        assert self.res_opt.vq_name == self.model_opt.vq_name
         
         # 加载VQ模型
-        self.vq_model = load_vq_model(vq_opt, self.device)
+        self.vq_model = load_vq_model(self.vq_opt, self.device)
         
         # 加载Transformer模型
-        self.t2m_transformer = load_transformer_model(model_opt, self.device)
+        self.t2m_transformer = load_transformer_model(self.model_opt, self.device)
         
         # 加载Residual模型
-        self.res_model = load_residual_model(res_opt, vq_opt, self.device)
+        self.res_model = load_residual_model(self.res_opt, self.vq_opt, self.device)
         
         # 加载Length Estimator
-        self.length_estimator = load_length_estimator(model_opt, self.device)
+        self.length_estimator = load_length_estimator(self.model_opt, self.device)
         
         # 将所有模型移到设备上并设置为评估模式
         for model in [self.vq_model, self.t2m_transformer, self.res_model, self.length_estimator]:
@@ -251,13 +251,13 @@ class MoMaskText2MotionNode:
             pred_motions = pred_motions.detach().cpu().numpy()
             
             # 反归一化
-            mean = np.load(pjoin(base_path, self.vq_config["checkpoints_dir"], 
-                               self.vq_config["dataset_name"], 
-                               self.vq_config["name"], 
+            mean = np.load(pjoin(base_path, self.vq_opt["checkpoints_dir"], 
+                               self.vq_opt["dataset_name"], 
+                               self.vq_opt["name"], 
                                "meta/mean.npy"))
-            std = np.load(pjoin(base_path, self.vq_config["checkpoints_dir"], 
-                              self.vq_config["dataset_name"], 
-                              self.vq_config["name"], 
+            std = np.load(pjoin(base_path, self.vq_opt["checkpoints_dir"], 
+                              self.vq_opt["dataset_name"], 
+                              self.vq_opt["name"], 
                               "meta/std.npy"))
             data = pred_motions * std + mean
 
