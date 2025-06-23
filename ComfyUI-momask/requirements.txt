@@ -1,1 +1,2 @@
 gdown
+clip @ git+https://github.com/openai/CLIP.git
