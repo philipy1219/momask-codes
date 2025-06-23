@@ -143,13 +143,16 @@ class MoMaskText2MotionNode:
         vq_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, model_opt.vq_name, 'opt.txt')
         vq_opt = get_opt(vq_opt_path, device=self.device)
         vq_opt.dim_pose = dim_pose
+        vq_opt.checkpoints_dir = pjoin(base_path, vq_opt.checkpoints_dir)
 
         model_opt.num_tokens = vq_opt.nb_code
         model_opt.num_quantizers = vq_opt.num_quantizers
         model_opt.code_dim = vq_opt.code_dim
+        model_opt.checkpoints_dir = pjoin(base_path, model_opt.checkpoints_dir)
 
         res_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", 'opt.txt')
         res_opt = get_opt(res_opt_path, device=self.device)
+        res_opt.checkpoints_dir = pjoin(base_path, res_opt.checkpoints_dir)
 
         assert res_opt.vq_name == model_opt.vq_name
         
