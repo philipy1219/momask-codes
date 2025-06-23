@@ -7,8 +7,9 @@ import torch.nn.functional as F
 import numpy as np
 from torch.distributions.categorical import Categorical
 import sys
+base_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(
-    os.path.dirname(os.path.abspath(__file__))
+    base_path
 )
 
 from model_loader import (
@@ -84,14 +85,14 @@ def get_opt(opt_path, device, **kwargs):
 
     # print(opt)
     opt_dict['which_epoch'] = 'finest'
-    opt.save_root = pjoin(opt.checkpoints_dir, opt.dataset_name, opt.name)
-    opt.model_dir = pjoin(opt.save_root, 'model')
-    opt.meta_dir = pjoin(opt.save_root, 'meta')
+    opt.save_root = pjoin(base_path, opt.checkpoints_dir, opt.dataset_name, opt.name)
+    opt.model_dir = pjoin(base_path, opt.save_root, 'model')
+    opt.meta_dir = pjoin(base_path, opt.save_root, 'meta')
 
     if opt.dataset_name == 't2m':
         opt.data_root = './dataset/HumanML3D/'
-        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
-        opt.text_dir = pjoin(opt.data_root, 'texts')
+        opt.motion_dir = pjoin(base_path, opt.data_root, 'new_joint_vecs')
+        opt.text_dir = pjoin(base_path, opt.data_root, 'texts')
         opt.joints_num = 22
         opt.dim_pose = 263
         opt.max_motion_length = 196
@@ -99,8 +100,8 @@ def get_opt(opt_path, device, **kwargs):
         opt.max_motion_token = 55
     elif opt.dataset_name == 'kit':
         opt.data_root = './dataset/KIT-ML/'
-        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
-        opt.text_dir = pjoin(opt.data_root, 'texts')
+        opt.motion_dir = pjoin(base_path, opt.data_root, 'new_joint_vecs')
+        opt.text_dir = pjoin(base_path, opt.data_root, 'texts')
         opt.joints_num = 21
         opt.dim_pose = 251
         opt.max_motion_length = 196
@@ -134,12 +135,12 @@ class MoMaskText2MotionNode:
         dim_pose = 253
         dataset_name = "t2m"
         checkpoints_dir = "checkpoints"
-        root_dir = pjoin(checkpoints_dir, dataset_name, "Comp_v6_KLD005")
-        model_dir = pjoin(root_dir, 'model')
-        model_opt_path = pjoin(root_dir, 'opt.txt')
+        root_dir = pjoin(base_path, checkpoints_dir, dataset_name, "Comp_v6_KLD005")
+        model_dir = pjoin(base_path, root_dir, 'model')
+        model_opt_path = pjoin(base_path, root_dir, 'opt.txt')
         model_opt = get_opt(model_opt_path, device=self.device)
         
-        vq_opt_path = pjoin(checkpoints_dir, dataset_name, model_opt.vq_name, 'opt.txt')
+        vq_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, model_opt.vq_name, 'opt.txt')
         vq_opt = get_opt(vq_opt_path, device=self.device)
         vq_opt.dim_pose = dim_pose
 
@@ -147,7 +148,7 @@ class MoMaskText2MotionNode:
         model_opt.num_quantizers = vq_opt.num_quantizers
         model_opt.code_dim = vq_opt.code_dim
 
-        res_opt_path = pjoin(checkpoints_dir, dataset_name, "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", 'opt.txt')
+        res_opt_path = pjoin(base_path, checkpoints_dir, dataset_name, "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", 'opt.txt')
         res_opt = get_opt(res_opt_path, device=self.device)
 
         assert res_opt.vq_name == model_opt.vq_name
@@ -247,11 +248,11 @@ class MoMaskText2MotionNode:
             pred_motions = pred_motions.detach().cpu().numpy()
             
             # 反归一化
-            mean = np.load(pjoin(self.vq_config["checkpoints_dir"], 
+            mean = np.load(pjoin(base_path, self.vq_config["checkpoints_dir"], 
                                self.vq_config["dataset_name"], 
                                self.vq_config["name"], 
                                "meta/mean.npy"))
-            std = np.load(pjoin(self.vq_config["checkpoints_dir"], 
+            std = np.load(pjoin(base_path, self.vq_config["checkpoints_dir"], 
                               self.vq_config["dataset_name"], 
                               self.vq_config["name"], 
                               "meta/std.npy"))
