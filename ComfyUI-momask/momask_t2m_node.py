@@ -1,5 +1,8 @@
 import os
 from os.path import join as pjoin
+from argparse import Namespace
+import re
+from utils.word_vectorizer import POS_enumerator
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -18,89 +21,131 @@ from model_loader import (
 from .utils import recover_from_ric
 from visualization.joints2bvh import Joint2BVHConvertor
 
+def is_float(numStr):
+    flag = False
+    numStr = str(numStr).strip().lstrip('-').lstrip('+')    # 去除正数(+)、负数(-)符号
+    try:
+        reg = re.compile(r'^[-+]?[0-9]+\.[0-9]+$')
+        res = reg.match(str(numStr))
+        if res:
+            flag = True
+    except Exception as ex:
+        print("is_float() - error: " + str(ex))
+    return flag
+
+
+def is_number(numStr):
+    flag = False
+    numStr = str(numStr).strip().lstrip('-').lstrip('+')    # 去除正数(+)、负数(-)符号
+    if str(numStr).isdigit():
+        flag = True
+    return flag
+
+
+def get_opt(opt_path, device, **kwargs):
+    opt = Namespace()
+    opt_dict = vars(opt)
+
+    skip = ('-------------- End ----------------',
+            '------------ Options -------------',
+            '\n')
+    print('Reading', opt_path)
+    with open(opt_path, 'r') as f:
+        for line in f:
+            if line.strip() not in skip:
+                # print(line.strip())
+                key, value = line.strip('\n').split(': ')
+                if value in ('True', 'False'):
+                    opt_dict[key] = (value == 'True')
+                #     print(key, value)
+                elif is_float(value):
+                    opt_dict[key] = float(value)
+                elif is_number(value):
+                    opt_dict[key] = int(value)
+                else:
+                    opt_dict[key] = str(value)
+
+    # print(opt)
+    opt_dict['which_epoch'] = 'finest'
+    opt.save_root = pjoin(opt.checkpoints_dir, opt.dataset_name, opt.name)
+    opt.model_dir = pjoin(opt.save_root, 'model')
+    opt.meta_dir = pjoin(opt.save_root, 'meta')
+
+    if opt.dataset_name == 't2m':
+        opt.data_root = './dataset/HumanML3D/'
+        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
+        opt.text_dir = pjoin(opt.data_root, 'texts')
+        opt.joints_num = 22
+        opt.dim_pose = 263
+        opt.max_motion_length = 196
+        opt.max_motion_frame = 196
+        opt.max_motion_token = 55
+    elif opt.dataset_name == 'kit':
+        opt.data_root = './dataset/KIT-ML/'
+        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
+        opt.text_dir = pjoin(opt.data_root, 'texts')
+        opt.joints_num = 21
+        opt.dim_pose = 251
+        opt.max_motion_length = 196
+        opt.max_motion_frame = 196
+        opt.max_motion_token = 55
+    else:
+        raise KeyError('Dataset not recognized')
+    if not hasattr(opt, 'unit_length'):
+        opt.unit_length = 4
+    opt.dim_word = 300
+    opt.num_classes = 200 // opt.unit_length
+    opt.dim_pos_ohot = len(POS_enumerator)
+    opt.is_train = False
+    opt.is_continue = False
+    opt.device = device
+
+    opt_dict.update(kwargs) # Overwrite with kwargs params
+
+    return opt
+
 class MoMaskText2MotionNode:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_version = 'ViT-B/32'
         self.output_dir = "outputs/momask_t2m"
         os.makedirs(self.output_dir, exist_ok=True)
-        
-        # 初始化配置
-        self.init_config()
-        
         # 加载模型
         self.load_models()
         
-    def init_config(self):
-        # VQ模型配置
-        self.vq_config = {
-            "checkpoints_dir": "checkpoints",
-            "dataset_name": "humanml",
-            "name": "vq_model",
-            "dim_pose": 263,  # humanml数据集使用263维
-            "nb_code": 512,
-            "code_dim": 512,
-            "output_emb_width": 512,
-            "down_t": 2,
-            "stride_t": 2,
-            "width": 512,
-            "depth": 3,
-            "dilation_growth_rate": 3,
-            "vq_act": "relu",
-            "vq_norm": "none"
-        }
-        
-        # Transformer模型配置
-        self.transformer_config = {
-            "checkpoints_dir": "checkpoints",
-            "dataset_name": "humanml",
-            "name": "transformer_model",
-            "code_dim": 512,
-            "latent_dim": 512,
-            "ff_size": 1024,
-            "n_layers": 8,
-            "n_heads": 8,
-            "dropout": 0.1,
-            "cond_drop_prob": 0.25
-        }
-        
-        # Residual模型配置
-        self.residual_config = {
-            "checkpoints_dir": "checkpoints",
-            "dataset_name": "humanml",
-            "name": "residual_model",
-            "latent_dim": 512,
-            "ff_size": 1024,
-            "n_layers": 8,
-            "n_heads": 8,
-            "dropout": 0.1,
-            "cond_drop_prob": 0.25,
-            "shared_codebook": True,
-            "share_weight": True
-        }
-        
     def load_models(self):
-        # 创建配置对象
-        class Config:
-            def __init__(self, config_dict):
-                for key, value in config_dict.items():
-                    setattr(self, key, value)
+        dim_pose = 253
+        dataset_name = "t2m"
+        checkpoints_dir = "checkpoints"
+        root_dir = pjoin(checkpoints_dir, dataset_name, "Comp_v6_KLD005")
+        model_dir = pjoin(root_dir, 'model')
+        model_opt_path = pjoin(root_dir, 'opt.txt')
+        model_opt = get_opt(model_opt_path, device=self.device)
         
-        vq_opt = Config(self.vq_config)
-        transformer_opt = Config(self.transformer_config)
-        residual_opt = Config(self.residual_config)
+        vq_opt_path = pjoin(checkpoints_dir, dataset_name, model_opt.vq_name, 'opt.txt')
+        vq_opt = get_opt(vq_opt_path, device=self.device)
+        vq_opt.dim_pose = dim_pose
+
+        model_opt.num_tokens = vq_opt.nb_code
+        model_opt.num_quantizers = vq_opt.num_quantizers
+        model_opt.code_dim = vq_opt.code_dim
+
+        res_opt_path = pjoin(checkpoints_dir, dataset_name, "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", 'opt.txt')
+        res_opt = get_opt(res_opt_path, device=self.device)
+
+        assert res_opt.vq_name == model_opt.vq_name
         
         # 加载VQ模型
         self.vq_model = load_vq_model(vq_opt, self.device)
         
         # 加载Transformer模型
-        self.t2m_transformer = load_transformer_model(transformer_opt, self.device)
+        self.t2m_transformer = load_transformer_model(model_opt, self.device)
         
         # 加载Residual模型
-        self.res_model = load_residual_model(residual_opt, vq_opt, self.device)
+        self.res_model = load_residual_model(res_opt, vq_opt, self.device)
         
         # 加载Length Estimator
-        self.length_estimator = load_length_estimator(transformer_opt, self.device)
+        self.length_estimator = load_length_estimator(model_opt, self.device)
         
         # 将所有模型移到设备上并设置为评估模式
         for model in [self.vq_model, self.t2m_transformer, self.res_model, self.length_estimator]:
