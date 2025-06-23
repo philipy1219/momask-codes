@@ -135,8 +135,7 @@ class MoMaskText2MotionNode:
         dim_pose = 253
         dataset_name = "t2m"
         checkpoints_dir = "checkpoints"
-        root_dir = pjoin(base_path, checkpoints_dir, dataset_name, "Comp_v6_KLD005")
-        model_dir = pjoin(base_path, root_dir, 'model')
+        root_dir = pjoin(base_path, checkpoints_dir, dataset_name)
         model_opt_path = pjoin(base_path, root_dir, 'opt.txt')
         model_opt = get_opt(model_opt_path, device=self.device)
         
